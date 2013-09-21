@@ -60,7 +60,7 @@ def VirusTotalSubmission(filename,output):
         if str(toot) == "None":
             errorStatement = "Hash not found in VirusTotal Database... may need to upload\n\n"
             VTResults.write(errorStatement)
-            #time.sleep(15)
+            time.sleep(15)
         else:
             Symantec = response_dict.get("scans", {}).get("Symantec", {}).get("result")
             Microsoft = response_dict.get("scans", {}).get("Microsoft", {}).get("result")
@@ -81,7 +81,7 @@ def VirusTotalSubmission(filename,output):
             VTResults.write(microsoftStr)
             VTResults.write(kasperskyStr)
 
-            #time.sleep(15)
+            time.sleep(15)
 
     VTResults.close()
 
