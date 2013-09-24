@@ -3,8 +3,8 @@ import csv
 import os
 import subprocess
 
-#to deal with the errors from volatility for beta version, need to skip the first few lines when reading files
-linesToSkip=6
+
+linesToSkip=2
 
 def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
 #what volatility commands to do we want to run?
@@ -12,7 +12,7 @@ def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
 	if ("Win7" or "Vista" or "2008") in memProfile:
 		#print "1st loop"		
 		if "64" in memProfile:
-			print "64 bit of 1st loop"
+			#print "64 bit of 1st loop"
 			commands = ['pslist',
 	        		'psscan',
 	        	   	'dlllist',
@@ -98,27 +98,27 @@ def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
     		p.wait()
 
 	if ("Win7" or "Vista" or "2008") in memProfile:
-		#if "64" in memProfile:
-		print "Now adding Win7/Vista/2008 items to DB"			
-		pslistFile(output,'pslist.txt',SQLdb)
-        	psscanFile(output, 'psscan.txt', SQLdb)
-       	   	dllList(output,'dlllist.txt',SQLdb)
-            	driverscanFile(output, 'driverscan.txt', SQLdb)
-           	modulesFile(output, 'modules.txt', SQLdb)
-        	netscanFile(output, 'netscan.txt', SQLdb)
-	#elif (("Win7" or "Vista" or "2008") and "86") in memProfile:
-	#		print "Now adding Win7/Vista/2008 32 bit items to DB"				
-	#		pslistFile(output,'pslist.txt',SQLdb)
-        #		psscanFile(output, 'psscan.txt', SQLdb),
-        		#apihooksFile(output, 'apihooks.txt', SQLdb)
-        #		callbacksFile(output, 'callbacks.txt', SQLdb)
-	#		dllList(output,'dlllist.txt',SQLdb)
-        #	    	driverscanFile(output, 'driverscan.txt', SQLdb)
-        #	   	modulesFile(output, 'modules.txt', SQLdb)
-        #		netscanFile(output, 'netscan.txt', SQLdb)
+		#print "1st loop"		
+		if "64" in memProfile:
+			print "Adding Win7/Vista 64-bit modules to DB"
+			pslistFile(output,'pslist.txt',SQLdb)
+        		psscanFile(output, 'psscan.txt', SQLdb)
+       	   		dllList(output,'dlllist.txt',SQLdb)
+            		driverscanFile(output, 'driverscan.txt', SQLdb)
+     		      	modulesFile(output, 'modules.txt', SQLdb)
+     		   	netscanFile(output, 'netscan.txt', SQLdb)
+		else:
+			print "Adding Win7/Vista 32-bit modules to DB" 	
+			pslistFile(output,'pslist.txt',SQLdb)
+        		psscanFile(output, 'psscan.txt', SQLdb),
+        		apihooksFile(output, 'apihooks.txt', SQLdb)
+        		callbacksFile(output, 'callbacks.txt', SQLdb)
+			dllList(output,'dlllist.txt',SQLdb)
+        	    	driverscanFile(output, 'driverscan.txt', SQLdb)
+        	   	modulesFile(output, 'modules.txt', SQLdb)
+        		netscanFile(output, 'netscan.txt', SQLdb)		
 	else:
-		#Adding everything we can to a DB
-		print "Now adding XP/2003 items to DB"	
+		print "Adding XP/2003 items to DB"	
 		pslistFile(output,'pslist.txt',SQLdb)
 		connscanFile(output, 'connscan.txt', SQLdb)
 		connectionsFile(output, 'connections.txt', SQLdb)
@@ -128,8 +128,8 @@ def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
 		modulesFile(output, 'modules.txt', SQLdb)
 		apihooksFile(output, 'apihooks.txt', SQLdb)
 		callbacksFile(output, 'callbacks.txt', SQLdb)
-		dllList(output,'dlllist.txt',SQLdb)
-
+		dllList(output,'dlllist.txt',SQLdb)	
+	
 def pslistFile(output,fileLocation,DBName):
 	output=os.path.join(output,fileLocation)
 	f = open(output,"rb")
@@ -442,13 +442,12 @@ def netscanFile(output, fileLocation, DBName):
 	output=os.path.join(output, fileLocation)
 	z = open(output, "rb")	
 	
+	numDelim = 7	
 	conn = sqlite3.connect(DBName)
 	c = conn.cursor()
 	c.execute('''create table netscan (offset text, protocol text, localAddress text, foreignAddress text, state test, pid integer, owner text, created text)''')
 
-	numDelim = 7 
-
-	for line in z.readlines()[5:]:	
+	for line in z.readlines()[1:]:	
 		line=' '.join(line.split())
 		newLine=line.split(" ",numDelim)
 		length = len(newLine)
