@@ -16,6 +16,15 @@ def md5sum(filename):
             md5.update(chunk)
     return md5.hexdigest()
 
+def checkForInternets():
+    print "Checking for internet connectivity..."
+    try:
+	response=urllib2.urlopen('http://74.125.228.100',timeout=2)
+	return True
+    except urllib2.URLError as err:
+	print "No internet! Skipping..."
+	pass
+
 def multScan(fileDirectory,output):
     if not os.path.exists("/usr/bin/clamscan"):
         print "ClamAV does not seem to be installed on this machine"
@@ -33,7 +42,7 @@ def multScan(fileDirectory,output):
         subprocess.call(yaraCommand, shell=True)
 
 def VirusTotalSubmission(filename,output):
-    print output
+    	     	
     VTResultsPath = os.path.join(os.path.abspath(output), "VirusTotalResults.txt")
     VTResults = open(VTResultsPath, 'a')
     f = file(filename, "rb")
@@ -43,11 +52,11 @@ def VirusTotalSubmission(filename,output):
         VTResults.write(line)
         VTResults.write(newline)
         hashValue = md5sum(line)
-        #print hashValue
+        
         #first check and see if there is any response from uploading the MD5
         url = "https://www.virustotal.com/vtapi/v2/file/report"
         parameters = {"resource": hashValue,
-		      "apikey": "<API_KEY>"}
+		      "apikey": "<INSERT API KEY HERE>"}
         data = urllib.urlencode(parameters)
         req = urllib2.Request(url, data)
         response = urllib2.urlopen(req)
@@ -60,7 +69,7 @@ def VirusTotalSubmission(filename,output):
         if str(toot) == "None":
             errorStatement = "Hash not found in VirusTotal Database... may need to upload\n\n"
             VTResults.write(errorStatement)
-            time.sleep(15)
+            #time.sleep(15)
         else:
             Symantec = response_dict.get("scans", {}).get("Symantec", {}).get("result")
             Microsoft = response_dict.get("scans", {}).get("Microsoft", {}).get("result")
@@ -81,11 +90,18 @@ def VirusTotalSubmission(filename,output):
             VTResults.write(microsoftStr)
             VTResults.write(kasperskyStr)
 
-            time.sleep(15)
+            #time.sleep(15)
 
     VTResults.close()
 
 def TeamCymruUpload(listOfFiles,output):
+    print "Checking for internet connectivity..."
+    try:
+	response=urllib2.urlopen('http://74.125.228.100',timeout=2)
+	print "We have the internets! Carry on...."
+    except urllib2.URLError as err:
+	print "No internet! Skipping..."
+	pass
     CymruList = []
     f = file(listOfFiles, "rb")
     for line in f.readlines():
@@ -147,12 +163,16 @@ def investigationCommands(output, volatilityPath, filename, memProfile, SQLdb):
     #ok now submit MD5 to VirusTotal
     AVLocation = "/tmp/hitsOnAV.txt"
 
-    #submit to Team Cymru and VirusToal
-    print "Submitting ClamAV to Team Cymru"
-    TeamCymruUpload(AVLocation,output)
-
-    print "Submitting ClamAV to VirusTotal"
-    VirusTotalSubmission(AVLocation,output)
+    result = checkForInternets()
+    if result == True:
+    	#submit to Team Cymru and VirusToal
+    	print "Submitting ClamAV to Team Cymru"
+    	TeamCymruUpload(AVLocation,output)
+	print "Submitting ClamAV to VirusTotal"
+    	VirusTotalSubmission(AVLocation,output)
+    else:
+	print "We have no internet... skipping ClamAV online submission"
+	pass
 
     #OK on to YARA!
     #First we need to split the lines, a space will work here (hopefully)
@@ -174,17 +194,21 @@ def investigationCommands(output, volatilityPath, filename, memProfile, SQLdb):
     command2 = "uniq /tmp/temp > /tmp/yaraSorted"
     subprocess.call(command2, stdout=subprocess.PIPE, shell=True)
 
-    #throwing the Yara things to VirusTotal
-    print "Submitting Yara to Team Cymru"
-    YaraLocation = "/tmp/yaraSorted"
+    result = checkForInternets()
+    if result == True:
+	#throwing the Yara things to VirusTotal
+	print "Submitting Yara to Team Cymru"
+        YaraLocation = "/tmp/yaraSorted"
+	TeamCymruUpload(YaraLocation,output)
 
-    TeamCymruUpload(YaraLocation,output)
+	print "Submitting Yara to VirusTotal"
+        VirusTotalSubmission(YaraLocation,output)
 
-    print "Submitting Yara to VirusTotal"
-    VirusTotalSubmission(YaraLocation,output)
+	CymruParse(output,"Cymru_results.txt", SQLdb)
+    else:
+	print "We have no internet, skipping Yara online submission..."
 
-    ClamAVParse(output,"clamAVScan.txt", SQLdb)
-    CymruParse(output,"Cymru_results.txt", SQLdb)	
+    ClamAVParse(output,"clamAVScan.txt", SQLdb)	
     YaraParse(output,"YaraHits.txt", SQLdb)
 
     #cleanup
@@ -214,7 +238,7 @@ def ClamAVParse(output,fileLocation,DBName):
 
 	conn.commit()
 	c.close()
-	print "ClamAV Results Added to Database!"
+	#print "ClamAV Results Added to Database!"
 
 def CymruParse(output,fileLocation,DBName):
 	output = os.path.join(output,fileLocation)

@@ -3,16 +3,13 @@ import csv
 import os
 import subprocess
 
-
+#this line will skip the first 2 lines (generally the header and the spacer line)
 linesToSkip=2
 
 def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
-#what volatility commands to do we want to run?
-	#print "The memory profile is at: ",memProfile
-	if ("Win7" or "Vista" or "2008") in memProfile:
-		#print "1st loop"		
+#what volatility commands to do we want to run? You can add/remove as needed! Make sure you place in the correct profile though!
+	if ("Win7" or "Vista" or "2008") in memProfile:		
 		if "64" in memProfile:
-			#print "64 bit of 1st loop"
 			commands = ['pslist',
 	        		'psscan',
 	        	   	'dlllist',
@@ -22,8 +19,7 @@ def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
 	        	  	'ssdt',
 				'netscan'
 				]
-		else:
-			#print "32 bit of 1st loop" 	
+		else:	
 			commands = ['pslist',
 	            		'psscan',
         	    		'apihooks',
@@ -36,7 +32,6 @@ def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
 				'netscan'
 				]		
 	else:
-		#print "2nd loop"
 		commands = ['pslist',
         		'psscan',
         	 	'apihooks',
@@ -55,17 +50,13 @@ def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
 	
 	for cmd in commands:
     		output_filepath = os.path.join(os.path.abspath(output), cmd + ".txt")
-    		#cmd_tuple = "python", volatilityPath, "-f", filename, "--profile=" + memProfile, cmd, "output-file=" + output_filepath
 		cmd_tuple = "python", volatilityPath, "-f", filename, "--profile=" + memProfile, cmd,
-    		print "Running " + cmd + "..."
-		#print cmd_tuple
-		#print "output for ", cmd, " is at: ", output_filepath     		
-		popen_object = subprocess.Popen(cmd_tuple, stdout=open(output_filepath, "w"))
-		#subprocess.call(cmd_tuple, stdout=open(os.devnull, "w"), stderr=open(os.devnull, "w"), shell=True)    		
+    		print "Running " + cmd + "..."  		
+		popen_object = subprocess.Popen(cmd_tuple, stdout=open(output_filepath, "w"))		
 		command_to_popen_map[cmd] = popen_object
 
 
-#command -> output_dir map
+	#dealing with the 'dumps'
 	command_to_output_dir = [
     		('dlldump', 'DLLDump'),
     		('vaddump', 'VADDump'),
@@ -74,31 +65,28 @@ def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
     		('malfind', 'malfind'),
 	]
 
-#create directory
+	#create directory for the dumps
 	for _, directory in command_to_output_dir:
     		directory = os.path.join(os.path.abspath(output), directory)
-		#print "Checking for directory: ", directory
     		if not os.path.exists(directory):
         		os.makedirs(directory)
-			#print "Directory created: ", directory
 
-#went back to the old school method of doing things
+	#changed to use popen... keeping the other commands in comments in case it gets real
 	for (dmpcmd, output_dir) in command_to_output_dir:
 		output_dir=os.path.join(os.path.abspath(output), output_dir)
-	    	#output_dir = os.path.join(output, output_dir)
-		#print "Output directory for dump commands is: " + output_dir
-    		finalCommand = "python " + volatilityPath + " -f " + filename + " " + "--profile=" + memProfile + " " + dmpcmd + " -D " + output_dir
-		#print "finalCommand is: " , finalCommand    		
+		cmd_tuple="python",volatilityPath,"-f",filename,"--profile=" + memProfile, dmpcmd, "-D", output_dir
+    		#finalCommand = "python " + volatilityPath + " -f " + filename + " " + "--profile=" + memProfile + " " + dmpcmd + " -D " + output_dir  	
 		print "Running " + dmpcmd + "..."
-    		subprocess.call(finalCommand, stdout=open(os.devnull, "w"), stderr=open(os.devnull, "w"), shell=True)
+    		#subprocess.call(finalCommand, stdout=open(os.devnull, "w"), stderr=open(os.devnull, "w"), shell=True)
+		popen_object = subprocess.Popen(cmd_tuple, stdout=open(os.devnull, "w"))		
+		command_to_popen_map[cmd] = popen_object
 
 	print "Waiting for volatility plugins to finish..."
 	for cmd, p in command_to_popen_map.iteritems():
     		print "Waiting for %s" % cmd
     		p.wait()
 
-	if ("Win7" or "Vista" or "2008") in memProfile:
-		#print "1st loop"		
+	if ("Win7" or "Vista" or "2008") in memProfile:		
 		if "64" in memProfile:
 			print "Adding Win7/Vista 64-bit modules to DB"
 			pslistFile(output,'pslist.txt',SQLdb)
@@ -153,7 +141,6 @@ def pslistFile(output,fileLocation,DBName):
 			continue 
 	conn.commit()
 	c.close()
-	print "pslist output added to database!"
 
 def connscanFile(output,fileLocation,DBName):	
 	output=os.path.join(output, fileLocation)
@@ -174,7 +161,6 @@ def connscanFile(output,fileLocation,DBName):
 			continue 
 	conn.commit()
 	c.close()
-	print "Connscan output added to database!"
 
 def connectionsFile(output,fileLocation,DBName):
 	output=os.path.join(output,fileLocation)
@@ -194,7 +180,6 @@ def connectionsFile(output,fileLocation,DBName):
 			continue 
 	conn.commit()
 	c.close()
-	print "Connections output added to database!"
 
 def sockscanFile(output,fileLocation,DBName):	
 	output=os.path.join(output, fileLocation)
@@ -216,7 +201,6 @@ def sockscanFile(output,fileLocation,DBName):
 			continue 
 	conn.commit()
 	c.close()
-	print "sockscan output added to database!"
 
 def driverscanFile(output,fileLocation,DBName):
 	output=os.path.join(output,fileLocation)
@@ -241,13 +225,10 @@ def driverscanFile(output,fileLocation,DBName):
 			continue 	
 	conn.commit()
 	c.close()
-	print "driverscan output added to database!"
 
 def psscanFile(output,fileLocation,DBName):
 	output=os.path.join(output, fileLocation)
 	f = open(output,"rb")
-	#toot = f.readline()
-	#firstLine=toot.split()
 	fieldsMaster = 11
 	numDelim = 10
 
@@ -261,15 +242,11 @@ def psscanFile(output,fileLocation,DBName):
 		newLine=line.split(" ",numDelim)
 		fieldsRow=len(newLine)
 		if fieldsRow < fieldsMaster:
-		#print ("We have", fieldsRow, " columns, but we need, ", fieldsMaster)
 			difference = fieldsMaster - fieldsRow
-		#print ("The difference is ", difference)
 			countAppend= 0
 			while countAppend < difference:		
 				newLine.append('blank')
 				countAppend = countAppend + 1
-			#print countAppend
-	#print newLine	
 		try:
 		        conn.execute('insert into psscan (offset, name, pid, ppid, PDB, createDate, createTime, createTimezone, exitDate, exitTime, exitTimezone) values (?,?,?,?,?,?,?,?,?,?,?)', newLine)
 
@@ -278,16 +255,11 @@ def psscanFile(output,fileLocation,DBName):
 			continue 	
 	conn.commit()
 	c.close()
-	print "psscan output added to database!"
-
 
 def modulesFile(output,fileLocation,DBName):
 	output=os.path.join(output,fileLocation)
 	f = open(output,"rb")
-	#toot = f.readline()
-	#firstLine=toot.split()
-	#fields = len(firstLine)
-	#print ("We are working with ", fields, " fields")
+
 	numDelim = 4 
 
 	conn = sqlite3.connect(DBName)
@@ -299,8 +271,6 @@ def modulesFile(output,fileLocation,DBName):
 		newLine=line.split(" ",numDelim)
 		for w in newLine:		
 			w.replace("\00","--")	 
-		#newLine=newLine.replace("\00", "--")
-
 		try:
 			conn.execute('insert into modules (offset, file, base, size, name) values (?,?,?,?,?)', newLine)
 
@@ -309,12 +279,9 @@ def modulesFile(output,fileLocation,DBName):
 			continue 	
 	conn.commit()
 	c.close()
-	print "Modules output added to database!"
-	
 
 def apihooksFile(output,fileLocation,DBName):
 	output=os.path.join(output, fileLocation)
-	#print "Creating APIHooks table..."
 	conn = sqlite3.connect(DBName)
 	c = conn.cursor()
 	c.execute('''create table APIhooks (hookMode text, hookType text, processTarget text, victimModule text, function text, hookAddress text, hookingModule text)''')
@@ -363,9 +330,7 @@ def apihooksFile(output,fileLocation,DBName):
 		else:
 			pass
 	#Ok... now to throw in the database
-	#print hook
 	lengthHook = len(hook)
-	#print lengthHook
 	while lengthHook > 0:
 		count = 0
 		if count < 7:
@@ -380,9 +345,6 @@ def apihooksFile(output,fileLocation,DBName):
 			count = 6
 			testLength= len(hook)
 			if (len(hook) < 7):
-				#print "Hook has: " ,hook
-				#print "We are within the length < 7 loop"
-				#print " The length of hook is: ", testLength
 				difference = 7 - testLength			
 				while testLength < 7:
 					hookSection=[]				
@@ -390,12 +352,10 @@ def apihooksFile(output,fileLocation,DBName):
 					while count <= testLength:					
 						hookSection.append(hook.pop(0))
 						count = count +1
-						#print hookSection
 					count = 0
 					while count < difference:				
 						hookSection.append("blank")
 						testLength = len(hookSection)
-						#print hookSection
 						count = count + 1					
 			try:
 	        		conn.execute('insert into APIhooks (hookMode, hookType, processTarget, victimModule, function, hookAddress, hookingModule) values (?,?,?,?,?,?,?)', hookSection)
@@ -404,14 +364,11 @@ def apihooksFile(output,fileLocation,DBName):
 				print "*APIHOOKS* Error at SQL"
 				continue 
 		lengthHook = len(hook)
-		#print "Now we are at: ", lengthHook	
 		conn.commit()
 		c.close()
-	print "apihooks output added to database!"
 
 def callbacksFile(output,fileLocation,DBName):
 	output=os.path.join(output,fileLocation)
-	#print "Creating CallBacks table..."
 	
 	conn = sqlite3.connect(DBName)
 	c = conn.cursor()
@@ -419,9 +376,7 @@ def callbacksFile(output,fileLocation,DBName):
 
 	f = open(output,"rb")
 	toot = f.readline()
-	#firstLine=toot.split()
-	#fields = len(firstLine)
-	#print ("We are working with ", fields, " fields")
+
 	numDelim = 3 
 
 	for line in f.readlines()[linesToSkip:]:	
@@ -436,7 +391,6 @@ def callbacksFile(output,fileLocation,DBName):
 
 	conn.commit()
 	c.close()
-	print "callbacks output added to database!"
 
 def netscanFile(output, fileLocation, DBName):
 	output=os.path.join(output, fileLocation)
@@ -461,7 +415,6 @@ def netscanFile(output, fileLocation, DBName):
 
 	conn.commit()
 	c.close()
-	print "Netscan output added to database!"
 	
 def dllList(output,fileLocation,DBName):
 	output=os.path.join(output, fileLocation)
@@ -483,8 +436,7 @@ def dllList(output,fileLocation,DBName):
 			line=line.rstrip()
 			aPid = line.split(":")
 			bPid.append(str(aPid[1]).replace(' ', ''))
-			# print bPid
-		#If we see the word 'PEB' it means its a terminated process so there will be nothing in terms of command line... but we need to account for it so we associate none to cFiller  	
+		#If we see the word 'PEB' it means its a terminated process so there will be nothing in terms of command line... but we need to account for it   	
 		elif 'PEB' in line:
 			cFiller.append("none")
 		#Looks for the command line invocation of the pid and put that in cFiller, we will link bPid and cFiller together (pid x has a command invocation of y)		
@@ -492,7 +444,6 @@ def dllList(output,fileLocation,DBName):
 			line=line.rstrip()
 			eCommandLine = line.partition(":")
 			cFiller.append(str(eCommandLine[2]).replace(' ',''))
-			# print cFiller
 		#next we look for the DLLs and append into d, we firstly append the PID with the dlls so we can associate it later in the database		
 		elif '0x' in line:
 			line=line.rstrip()
@@ -533,7 +484,6 @@ def dllList(output,fileLocation,DBName):
 		conn.execute(executeStatement,(str(d[count]),str(d[count+1]),str(d[count+2]),str(d[count+3]),str(d[count+4])))	
 		count = count + 5 
 
-	print "Both Tables of DLLlist added!"
 	conn.commit()
 	c.close()
 
