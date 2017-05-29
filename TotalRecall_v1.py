@@ -88,6 +88,9 @@ if os.path.isfile(SQLdb):
 		timelineToggle=i[1]
 		profileToggle=str(i[2])
 		basicToggle=i[3]
+	query="select profile from info"
+	c.execute(query)
+	memProfile=c.fetchone()[0]
 	if basicToggle == 1:
 		if args['investigation'] and (investigationToggle == 1):
 			print "We already did the investigation piece for this... please change your parameters"
