@@ -1,10 +1,26 @@
 import sqlite3
 import csv
 import os
-import subprocess
+import subprocess,json
 
 
 linesToSkip=2
+def profiler(volatilityPath, filename,SQLdb):
+	memProfile=""
+	cmd="python", volatilityPath, "-f",filename, "imageinfo", "--output=json"
+	p=subprocess.Popen(cmd,stdout=subprocess.PIPE)
+	output = p.stdout.read()
+	v=json.loads(output)
+	foo=v['rows'][0][0]
+	bar=foo.split(',')
+	print "The profile we will be using is:", bar[0]
+	memProfile=bar[0]
+	conn = sqlite3.connect(SQLdb)
+	c = conn.cursor()
+	test="""update info set profile=('%s') where basic=1""" % memProfile
+	c.execute(test)
+	conn.commit()
+	print "Profile updated in database"
 
 def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
 #what volatility commands to do we want to run?

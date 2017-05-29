@@ -32,7 +32,7 @@ parser = argparse.ArgumentParser(description='Grabs information from a memory du
 parser.add_argument('-d', '--directory', metavar="PATH", help='Directory to save the output of the commands to.',
                     required=True)
 parser.add_argument('-f', '--filename', help='The memory dump you wish to analyse.', required=True)
-parser.add_argument('-p', '--profile', help='The profile of the memory dump being analysed', required=True)
+parser.add_argument('-p', '--profile', help='The profile of the memory dump being analysed', required=False)
 parser.add_argument('-v', '--volatility', help='The full path to vol.py, default is to usr/bin/vol.py')
 parser.add_argument('-i', '--investigation', action="store_true",
                     help='Enable investigation of dumped items with yara and clamav')
@@ -48,7 +48,7 @@ if args['volatility']:
     volatilityPath = args['volatility']
     if not os.path.exists(volatilityPath):
         print "vol.py does not exist at location, trying default."
-        volatilityPath = "/usr/local/bin/vol.py"
+        volatilityPath = "/usr/bin/vol.py"
         if not os.path.exists(volatilityPath):
             print "vol.py does not exist at default, check path."
             sys.exit()
@@ -65,7 +65,7 @@ if not os.path.exists(directory):
     os.makedirs(directory)
 
 #grab profile
-memProfile = args['profile']
+#memProfile = args['profile']
 
 output = os.path.join(directory)
 output = os.path.abspath(output)
@@ -121,10 +121,15 @@ else:
 	c = conn.cursor()		
 	c.execute('create table info (investigation integer, timeline integer, profile text, basic integer)')
 	c.execute('insert into info (basic) values (1)')    
-	test="""update info set profile=('%s') where basic=1""" % memProfile
-	c.execute(test)
 	conn.commit()
+	
 	print "Database created in location: " + SQLdb + ". Moving on...."	
+	print "Determining profile of memory capture..."
+	basicParse.profiler(volatilityPath,filename,SQLdb)
+	query="select profile from info"
+	c.execute(query)
+	memProfile=c.fetchone()[0]
+	print "Back in main code page, profile is set to ", memProfile
 	basicParse.basicCommands (output, volatilityPath, filename, memProfile,SQLdb)     
 	if args['investigation']:
                 c.execute("update info set investigation=1 where basic=1")
