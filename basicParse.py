@@ -1,20 +1,25 @@
 import sqlite3
 import csv
 import os
-import subprocess,json
+import subprocess,simplejson
 
 
 linesToSkip=2
-def profiler(volatilityPath, filename,SQLdb):
+def profiler(output,volatilityPath, filename,SQLdb):
 	memProfile=""
-	cmd="python", volatilityPath, "-f",filename, "imageinfo", "--output=json"
-	p=subprocess.Popen(cmd,stdout=subprocess.PIPE)
-	output = p.stdout.read()
-	v=json.loads(output)
-	foo=v['rows'][0][0]
-	bar=foo.split(',')
-	print "The profile we will be using is:", bar[0]
-	memProfile=bar[0]
+	output_filepath=os.path.join(output,"imageinfo.txt")
+	cmd="python", volatilityPath, "-f",filename, "imageinfo", "--output=text"
+	subprocess.call(cmd,stdout=open(output_filepath, "w"))
+	f_handle=open(output_filepath)
+	for line in f_handle:
+		if "Suggested Profile(s)" in line:
+			scrap=line.split(":")[1]
+			scrap_2=scrap.split(",")[0]
+			scrap_2=scrap_2.strip()
+			#print scrap_2
+			memProfile=scrap_2
+			break
+	print "The profile we will be using is:", memProfile
 	conn = sqlite3.connect(SQLdb)
 	c = conn.cursor()
 	test="""update info set profile=('%s') where basic=1""" % memProfile
@@ -78,8 +83,7 @@ def basicCommands(output, volatilityPath, filename, memProfile, SQLdb):
 		#print "output for ", cmd, " is at: ", output_filepath     		
 		popen_object = subprocess.Popen(cmd_tuple, stdout=open(output_filepath, "w"))
 		#subprocess.call(cmd_tuple, stdout=open(os.devnull, "w"), stderr=open(os.devnull, "w"), shell=True)    		
-		command_to_popen_map[cmd] = popen_object
-
+		command_to_popen_map[cmd] = popen_object	
 
 #command -> output_dir map
 	command_to_output_dir = [
